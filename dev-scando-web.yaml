@@ -31,5 +31,4 @@ spec:
     app: dev-scando-web
   ports:
     - protocol: TCP
-      #port: 8080
       port: 80
