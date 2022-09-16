@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-scando-web
+  labels:
+    app: dev-scando-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dev-scando-web
+  template:
+    metadata:
+      labels:
+        app: dev-scando-web
+    spec:
+      containers:
+      - name: dev-scando-web
+        image: 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-web:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-scando-web
+spec:
+  selector:
+    app: dev-scando-web
+  ports:
+    - protocol: TCP
+      #port: 8080
+      port: 80
