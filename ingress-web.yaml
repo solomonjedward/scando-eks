@@ -3,12 +3,12 @@ kind: Ingress
 metadata:
   name: scando-ingress
   annotations:
-          # nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /
 
 spec:
   ingressClassName: nginx
   rules:
-  - host: dev1.scando.world
+  - host:
     http:
       paths:
       - path: /
