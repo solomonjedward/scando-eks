@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scando-ingress-admin
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "stickounet"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+spec:
+  tls:
+  - hosts:
+    - dev1.scando.world
+    secretName: dev-scando-tls
+  ingressClassName: nginx
+  rules:
+  - host: "dev1.scando.world"
+    http:
+      paths:
+      - path: /scando-admin(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: dev-scando-admin
+            port:
+              number: 8083
+  - host: "dev1.scando.world"
+    http:
+      paths:
+      - path: /scando-main(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: dev-scando-main
+            port:
+              number: 8080
