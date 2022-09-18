@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: scando-dev-cert
+  namespace: dev-scando
+spec:
+  dnsNames:
+    - dev1.scando.world
+  secretName: dev-scando-tls
+  issuerRef:
+    name: letsencrypt-cluster-issuer
+    kind: ClusterIssuer
