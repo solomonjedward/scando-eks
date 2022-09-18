@@ -1,0 +1,82 @@
+server:
+  port: 8083
+  tomcat:
+    max-swallow-size: 100MB
+  basePath: "/scando-admin"
+
+
+#Database
+scando:
+  datasource:
+    jdbc-url: jdbc:postgresql://rds-postgres.cemocqtclv22.ap-south-1.rds.amazonaws.com:5432/mypostgresql
+    username: devstoriyohrds
+    password: jVZe32Xv
+    driverClassName: org.postgresql.Driver
+    minimumIdle: 2
+    maximumPoolSize: 1000
+  server:
+    host: dev1.scando.world/scando-admin
+    protocol: http
+  web:
+    url: http://dev.scando.world
+
+
+#Spring
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: false
+        jdbc:
+          batch_size: 30
+  application:
+    name: scando-admin-docker
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  jwt:
+    secret: a9a5d626c5f95d78d8d662a60ddf35a928e87d62f201ea017bd1d8ec4b64a0f4
+  security:
+    user:
+      name: client
+      password: client
+  boot:
+    admin:
+      client:
+        enable: false
+        url: http://dev.scando.world:8081
+        username: admin
+        password: password
+        instance:
+          management-base-url: http://dev1.scando.world/scando-admin
+          service-base-url: dev1.scando.world/scando-admin/admin-api-spec-login
+          metadata:
+            user:
+              name: ${spring.security.user.name}
+              password: ${spring.security.user.password}
+
+#Actuator
+management:
+  trace:
+    include: "*"
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    actuator:
+      enabled: true
+  security:
+    enabled: false
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+
+
+#Logging
+
+#logging:
+#  config: classpath:logback-dev.xml
+#  file:
+#    name: logs/scando_admin.log
