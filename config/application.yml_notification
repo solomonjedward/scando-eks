@@ -1,0 +1,52 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /
+
+
+scando:
+  google:
+    service:
+      file: firebase.json
+
+
+spring:
+  security:
+    user:
+      name: client
+      password: password
+  application:
+    name: scando-notification-service
+  boot:
+    admin:
+      client:
+        enable: false
+        url: http://dev1.scando.world:8081
+        username: admin
+        password: password
+        instance:
+          management-base-url: http://dev1.scando.world:8082
+          service-base-url: http://dev1.scando.world:8082
+
+
+
+management:
+  trace:
+    include: "*"
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    actuator:
+      enabled: true
+  security:
+    enabled: false
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+
+logging:
+  file:
+    name: logs/scando_notification.log
