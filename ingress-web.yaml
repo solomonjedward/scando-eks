@@ -6,9 +6,13 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 
 spec:
+  tls:
+  - hosts:
+    - dev1.scando.world
+    secretName: dev-scando-tls
   ingressClassName: nginx
   rules:
-  - host:
+  - host: "dev1.scando.world"
     http:
       paths:
       - path: /
