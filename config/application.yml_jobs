@@ -1,0 +1,33 @@
+server:
+  port: 8084
+
+
+scando:
+  datasource:
+    jdbc-url: jdbc:postgresql://rds-postgres.cemocqtclv22.ap-south-1.rds.amazonaws.com:5432/mypostgresql
+    username: devstoriyohrds
+    password: jVZe32Xv
+    driverClassName: org.postgresql.Driver
+    minimumIdle: 2
+    maximumPoolSize: 1000
+  server:
+    host: dev1.scando.world:8080
+  web:
+    url: http://dev1.scando.world
+
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: false
+        jdbc:
+          batch_size: 30
+  task:
+    scheduling:
+      pool:
+        size: 20
+
+logging:
+  file:
+    name: logs/scando.log
