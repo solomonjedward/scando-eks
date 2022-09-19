@@ -12,6 +12,8 @@ scando:
     maximumPoolSize: 1000
   server:
     host: dev1.scando.world:8080
+    protocol: https
+    notification: https://dev1.scando/scando-notification
   web:
     url: http://dev1.scando.world
 
