@@ -1,0 +1,261 @@
+pipeline {
+
+    agent {label 'EKS-Dev-Scando'}
+
+    stages {
+
+
+        stage ('Main') {
+            when {
+                expression { choice == 'Main' }
+            }
+            steps {
+        
+
+
+    
+            checkout([$class: 'GitSCM', branches: [[name: '*/dev']], doGenerateSubmoduleConfigurations: false,  extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: "scando-main"]],, submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git_loginsolo', url: 'https://github.com/scando-elearn/api.git']]])
+           
+ sh '''
+ echo "#####Removing exisiting configuration files####"
+                rm scando-main/src/main/resources/application.yml
+                rm scando-main/src/main/resources/application-dev.yml
+                rm scando-main/src/main/resources/application-qa.yml
+                
+    
+ echo "#####Copying configuration File#####"
+                sudo cp /home/ubuntu/eks/config/Dockerfile scando-main
+                sudo chown ubuntu. scando-main/Dockerfile  
+                '''
+
+echo "#####Build Jar######"
+                configFileProvider(
+                [configFile(fileId: '4423f0e5-e0e1-4263-99e1-80fe49d99bec', targetLocation: 'scando-main/src/main/resources')]) 
+                {
+                dir('scando-main') { sh 'mvn clean install -DskipTests' }
+                }
+    
+
+echo "######Create Docker Image########"            
+                dir('scando-main') { sh 'sudo docker build -t dev-scando-main .' }
+                   sh 'sudo docker image prune --filter="dangling=true" --force'
+
+echo "######Push image to ECR########"
+
+       sh ''' 
+                 aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 744012312434.dkr.ecr.ap-south-1.amazonaws.com
+                 docker tag dev-scando-main:latest 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-main:latest
+                  docker push 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-main:latest
+                  '''
+
+echo "######Rollout Service with new Image########"
+        sh 'aws ecs update-service --cluster DevScando --service main --force-new-deployment'
+    }
+}
+
+
+//############################
+
+
+
+ stage ('Admin') {
+            when {
+                expression { choice == 'Admin' }
+            }
+            steps {
+                
+
+            checkout([$class: 'GitSCM', branches: [[name: '*/admin-api']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: "scando-admin"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git_loginsolo', url: 'https://github.com/scando-elearn/api.git']]])
+           
+ sh '''
+ echo "#####Removing exisiting configuration files####"
+                rm scando-admin/src/main/resources/application.yml
+                rm scando-admin/src/main/resources/application-dev.yml
+                rm scando-admin/src/main/resources/application-qa.yml
+                
+    
+ echo "#####Copying configuration File#####"
+                sudo cp /home/ubuntu/eks/config/Dockerfile scando-admin
+                sudo chown ubuntu. scando-admin/Dockerfile
+    '''
+echo "#####Building Jar File#####"
+                configFileProvider(
+                [configFile(fileId: 'f73b5c05-40e8-4c00-8911-094af36dfd0b', targetLocation: 'scando-admin/src/main/resources')]) 
+                {
+                    dir('scando-admin') { sh 'mvn clean install -DskipTests' }
+                }
+
+
+echo "#####Creating Docker Image#####"            
+
+                dir('scando-admin') { sh 'sudo docker build -t dev-scando-admin .' }
+                   sh 'sudo docker image prune --filter="dangling=true" --force'
+
+echo "#####Push Image to ECR#####"         
+
+                    sh '''
+                    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 744012312434.dkr.ecr.ap-south-1.amazonaws.com
+                    docker tag dev-scando-admin:latest 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-admin:latest 
+                    docker push 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-admin:latest 
+                  '''
+echo "######Rollout Service with new Image########"
+        sh 'aws ecs update-service --cluster DevScando --service admin --force-new-deployment'
+
+            }}
+    
+    //    ################
+    
+    
+      stage ('Jobs') {
+            when {
+                expression { choice == 'Jobs' }
+            }
+            steps {
+        
+
+            checkout([$class: 'GitSCM', branches: [[name: '*/scheduler_jobs']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: "scando-jobs"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git_loginsolo', url: 'https://github.com/scando-elearn/api.git']]])
+           
+ sh '''
+ echo "#####Removing exisiting configuration files####"
+               rm scando-jobs/src/main/resources/application.yml
+                rm scando-jobs/src/main/resources/application-dev.yml
+                rm scando-jobs/src/main/resources/application-qa.yml
+                
+    
+ echo "#####Copying configuration File#####"
+                sudo cp /home/ubuntu/eks/config/Dockerfile_j scando-jobs/Dockerfile
+                sudo chown ubuntu. scando-jobs/Dockerfile 
+                '''
+                
+echo "#####Build Jar######"
+                configFileProvider(
+                [configFile(fileId: 'cb33340a-379e-4534-b471-76feff304001', targetLocation: 'scando-jobs/src/main/resources')]) 
+                {
+                  dir('scando-jobs') { sh 'mvn clean install -DskipTests' }
+                }
+
+echo "######Create Docker Image########"            
+                dir('scando-jobs') { sh 'sudo docker build -t dev-scando-jobs .' }
+                   sh 'sudo docker image prune --filter="dangling=true" --force'
+
+echo "Push image to ECR"
+
+       sh ''' 
+                 aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 744012312434.dkr.ecr.ap-south-1.amazonaws.com
+                 docker tag dev-scando-jobs:latest 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-jobs:latest
+                docker push 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-jobs:latest
+                  '''
+                  
+echo "######Rollout Service with new Image########"
+        sh 'aws ecs update-service --cluster DevScando --service jobs --force-new-deployment'
+
+    }
+}
+            
+            
+            
+// ###########################
+
+
+
+      stage ('Notification') {
+            when {
+                expression { choice == 'Notification' }
+            }
+            steps {
+        
+
+            checkout([$class: 'GitSCM', branches: [[name: '*/dev']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: "scando-notification"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git_loginsolo', url: 'https://github.com/scando-elearn/fcm.git']]])
+           
+ sh '''
+ echo "#####Removing exisiting configuration files####"
+               rm scando-notification/src/main/resources/application.yml
+                rm scando-notification/src/main/resources/application-dev.yml
+                rm scando-notification/src/main/resources/application-qa.yml
+                
+    
+ echo "#####Copying configuration File#####"
+               sudo cp /home/ubuntu/eks/config/Dockerfile_n scando-notification/Dockerfile
+                sudo chown ubuntu. scando-notification/Dockerfile
+
+    '''
+echo "#####Build Jar######"
+                configFileProvider(
+                [configFile(fileId: '37180665-4d91-4c03-9736-a15b11c1b7cd', targetLocation: 'scando-notification/src/main/resources')]) 
+                {
+                 dir('scando-notification') { sh 'mvn clean install -DskipTests' }
+                }
+
+echo "######Create Docker Image########"            
+                dir('scando-notification') { sh 'sudo docker build -t dev-scando-notification .' }
+                sh 'sudo docker image prune --filter="dangling=true" --force'
+echo "Push image to ECR"
+
+       sh ''' 
+                 aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 744012312434.dkr.ecr.ap-south-1.amazonaws.com
+                    docker tag dev-scando-notification:latest 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-notification:latest
+                    docker push 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-notification:latest
+                  '''
+
+echo "######Rollout Service with new Image########"
+        sh 'aws ecs update-service --cluster DevScando --service notification --force-new-deployment'      
+            
+
+    }
+}
+            
+            
+//########################
+
+
+      stage ('Web') {
+            when {
+                expression { choice == 'Web' }
+            }
+            steps {
+                
+            checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: "scando-web"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git_loginsolo', url: 'https://github.com/scando-elearn/web.git']]])
+        
+        echo "#########Building Angular##########"
+        dir('scando-web') {
+        sh "sudo rm -rf dist"
+        sh "sudo npm update --force"
+        sh "sudo ng update --force"
+        sh "sudo npm run large-build"
+        }
+        
+echo "######Copying Web files, Creating and pushing docker image########"
+    
+sh '''
+if $(docker ps|grep 80/tcp|awk '{print $1}'); then :; else (docker stop $(docker ps |grep httpd |awk '{print $1}'));  fi
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 744012312434.dkr.ecr.ap-south-1.amazonaws.com
+
+docker pull 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-web:latest
+docker run -i -t -d -p80:80 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-web:latest
+docker exec $(docker ps |grep httpd |awk '{print $1}') rm -rf /usr/local/apache2/htdocs/scando/
+
+'''
+
+dir('scando-web') {sh  '''docker cp ./dist/scando-web/ $(docker ps |grep httpd |awk '{print $1}'):/usr/local/apache2/htdocs/scando'''}
+    
+    sh '''
+
+        docker commit $(docker ps |grep httpd |awk '{print $1}')
+        docker tag $(docker images |head -2|grep none| awk '{print $3}') dev-scando-web:latest 
+        docker tag dev-scando-web:latest 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-web:latest
+        docker push 744012312434.dkr.ecr.ap-south-1.amazonaws.com/dev-scando-web:latest
+        
+        docker stop $(docker ps |grep httpd |awk '{print $1}')
+        
+        sudo docker image prune --filter="dangling=true" --force
+        '''
+        
+        echo "######Rollout Service with new Image########"
+        sh 'aws ecs update-service --cluster DevScando --service web --force-new-deployment'
+
+
+    }
+}
+ 
+
+    }}
